@@ -1,0 +1,46 @@
+# yolo_image_classifier.py
+"""
+Basic Image Classifier using YOLOv8 (classification mode).
+- Input: path to an image
+- Output: top-1 class label and confidence
+"""
+
+from ultralytics import YOLO
+
+def classify_image(image_path: str, topk: int = 1):
+    # Load YOLOv8 classification model
+    model = YOLO("yolov8n-cls.pt")  # "n" = nano (fastest, smallest)
+
+    # Run prediction
+    results = model.predict(source=image_path, verbose=False)
+    res = results[0]
+
+    # Get top-k predictions
+    probs = res.probs
+    names = res.names
+
+    topk_pairs = []
+    if topk == 1:
+        topk_pairs.append((names[probs.top1], float(probs.top1conf)))
+    elif topk <= 5:
+        # Use top5 and top5conf for up to 5 predictions
+        topk_pairs = [(names[int(i)], float(s)) for i, s in zip(probs.top5[:topk], probs.top5conf[:topk])]
+    else:
+        # For topk > 5, we would need to sort the probabilities manually
+        # This is a simplified example for topk <= 5
+        print("Warning: topk > 5 is not fully supported in this example.")
+        # Fallback to top 5
+        topk_pairs = [(names[int(i)], float(s)) for i, s in zip(probs.top5, probs.top5conf)]
+
+
+    return topk_pairs
+
+
+if __name__ == "__main__":
+    # Example usage
+    image_path = "/content/17561403582365484755955799870644.jpg"  # replace with your image path
+    predictions = classify_image(image_path, topk=5)
+
+    print(f"Image: {image_path}")
+    for rank, (label, score) in enumerate(predictions, start=1):
+        print(f"Top {rank}: {label} ({score:.3f})")
